@@ -1,0 +1,34 @@
+CC = gcc
+CFLAGS  = -g -Wall -w
+EXECFILES = all
+
+# typing 'make' will invoke the first target entry in the file 
+# (in this case the default target entry)
+# you can name this target entry anything, but "default" or "all"
+# are the most commonly used names by convention
+#
+default: all
+
+# To start over from scratch, type 'make clean'.  This
+# removes the executable file, as well as old .o object
+# files and *~ backup files:
+#
+
+
+all:out1 out2 out3
+
+
+out1: MergeSort.c
+	tigress --Transform=Virtualize --Functions=Merge --Transform=EncodeLiterals --Functions=Merge --Transform=RandomFuns --Transform=EncodeLiterals --Functions=main --out=out1.c /home/rahul/Desktop/Security/tigress-2.0/MergeSort.c 
+
+out2: MergeSort.c
+	tigress --Transform=InitOpaque --Functions=Merge --Transform=Virtualize  --Functions=Merge --Transform=Flatten --FlattenDispatch=indirect --FlattenObfuscateNext=true --Functions=Merge  --out=out2.c /home/rahul/Desktop/Security/tigress-2.0/MergeSort.c
+
+out3: MergeSort.c
+	tigress --Transform=InitOpaque --Functions=Merge --Transform=Virtualize  --Functions=Merge --Transform=Flatten --FlattenDispatch=indirect --FlattenObfuscateNext=true --Functions=Merge --Transform=RndArgs --RndArgsBogusNo=4 --Functions=MergeSort --Transform=EncodeLiterals --EncodeLiteralsKinds=integer --Functions=main --Transform=AddOpaque --Functions=main --AddOpaqueCount=5 --AddOpaqueKinds=call,bug,true,junk,bug --out=out3.c /home/rahul/Desktop/Security/tigress-2.0/MergeSort.c
+
+clean: 
+	$(RM) count *.o *~
+	$(RM) count *.a *~
+	$(RM) $(EXECFILES)
+

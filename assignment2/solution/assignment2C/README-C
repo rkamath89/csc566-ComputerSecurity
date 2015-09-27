@@ -1,0 +1,17 @@
+FIRSTNAME: RAHUL
+LASTNAME: KAMATH
+EMAILADDRESS: rkamath@email.arizona.edu
+UNDERGRADUATE,MASTERS,PHD (U/M/P): M
+PROGRAM: Merge Sort Algorithm
+ASSET: The entire Program , it has 3 Functions Merge, MergeSort, Main . At each stage i am trying to obfuscate one function and at the next the previous plus a new function 
+SCRIPT1:
+Since the program is a simple sorting algorithm , i have provided integer Literals in the code. I wanted to encode these literals hence i used the --Transform=EncodeLiterals on the main function and i wanted to mess up the code a bit more and i wanted to use Function Virtualization to see how it acctually obfuscates the code so i used the --Transform=Virtualize on my merge function , i did not see any slow down when i ran the objuscated code then again it is a simple Merge Sort , so i guess thats fine.
+I feel my asset is quite protected by using the transformations . Especially the EncodeLiterals , it obfuscated simple numbers to something crazy !!!!
+SCRIPT2:
+I wanted to use opaque predicates and use code flattening so that it becomes more difficult for a hacker to understand the Merge algorithm , so i used --Transform=InitOpaque and --Transform=Flatten for this script, i did not see any slow down . My asset is not well protected since i did not use encode literals . It is easy for a hacker to see the numbers stored in my program and what is being passed. I did not obfuscate merge sort , this also makes it easy for a hacker to understand my code. But the merge function is well obfuscated.
+SCRIPT3:
+I used a lot of obbfuscation , i have obfuscated Merge, MergeSort and Main. Using --Transform=Virtualize, -Transform=Flatten , -Transform=RndArgs, --Transform=EncodeLiterals , -Transform=AddOpaque ( all the options ). Iu used this combo since i wanted to make my asset as secure as possible making reverse engineering really really really really hard. I obfuscated it by using bogous arguments, i flattened the code . I feel my asset is best protected using this script
+COMMENTS:
+It was fun to see how tigress obfuscates code and makes life hell for Hacckers.
+I enjoyed this assignment , i even tried it with other programs for fun.
+The assignemnt was Easy
