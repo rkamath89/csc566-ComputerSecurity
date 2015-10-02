@@ -1,0 +1,27 @@
+%ebp is frame pointer
+stack
+-20%ebp means sub 20 from ebp
+--Start -- HighAddress
+
+
+--End -- LowAddress
+
+
+void func(char *a1,int a2,int a3)
+{
+	char b1[12];
+	int b2;
+	int b3;
+}
+
+Stack will be like
+
+10 - a3  |  Argumets passed to function
+6 - a2    |
+2 - a1		|
+Return Addr
+Prev Frame Pointer
+0 - b[12]
+-12 - b[0]
+-16 - b2
+-20 - b3
