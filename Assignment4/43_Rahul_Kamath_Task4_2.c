@@ -63,10 +63,11 @@ main(int argc, char *argv[])
     
 int dontExit =1;
 char *str ;
-    
+    int numberOfComp =0;
   while(dontExit)
    {
     str = (char*)malloc(10);
+numberOfComp++;
     str = randomStr(str,9);
     mdctxdup = EVP_MD_CTX_create();
     EVP_DigestInit_ex(mdctxdup, md, NULL);
@@ -87,7 +88,7 @@ EVP_MD_CTX_destroy(mdctxdup);
     for(i = 0; i < md_lendup; i++)
     printf("%02x", md_valuedup[i]);
     printf("\n");
-
+	printf("Number Of Comparisons : %d\n",numberOfComp);
     
     /* Call this once before exit. */
     EVP_cleanup();
