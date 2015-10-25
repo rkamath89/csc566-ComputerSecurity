@@ -30,7 +30,7 @@ public class DESTest {
 		String _56BitBinaryKey = "00000000110111111111000110111011010100010011010010001111";
 		String leftHalf = "0000000011011111111100011011";
 		String rightHalf = "1011010100010011010010001111";
-		List<String> splitKey = DES.splitTheKeyIntoTwoHalves(_56BitBinaryKey);
+		List<String> splitKey = DES.splitTheStringIntoTwoHalves(_56BitBinaryKey);
 		Assert.assertEquals(leftHalf, splitKey.get(0));
 		Assert.assertEquals(rightHalf, splitKey.get(1));
 	}
@@ -89,5 +89,11 @@ public class DESTest {
 		key = DES.keyListAfterPc2.get(15); //  Actually 16
 		Assert.assertEquals("110010110011110110001011000011100001011111110101",key);
 		
+	}
+	public void IntitialPermuatationTest()
+	{
+		String plainTextInBinary="0000000100100011010001010110011110001001101010111100110111101111";
+		String plainTextAfterIP = DES.applyPCToKey(DES.IP, plainTextInBinary);
+		Assert.assertEquals("1100110000000000110011001111111111110000101010101111000010101010", plainTextAfterIP);
 	}
 }
