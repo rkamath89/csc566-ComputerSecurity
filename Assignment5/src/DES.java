@@ -7,14 +7,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import gnu.getopt.Getopt;
 
 
 public class DES {
-	private static String characters = "abcdefghijklmnpqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-	private static List<String> keyList = new ArrayList<String>();
-	private static HashMap<Integer,List<String>> keyRounds = new HashMap<Integer,List<String>>();
+	static String characters = "abcdefghijklmnpqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	static List<String> keyListAfterPc2 = new ArrayList<String>();
+	static HashMap<Integer,List<String>> keyRounds = new HashMap<Integer,List<String>>();
 	public final static boolean _DEBUG = true;
 	//Use this to make key from 64 to 56 Bit
 	public static int[]  PC1 = {
@@ -189,46 +190,40 @@ public class DES {
 		return null;
 	}
 
-    static String rotateTheKeyLeft(String key,int rotation)
-    {
-    	char []rotatedKey = new char[key.length()];
-    	char []OriginalKey = key.toCharArray();
-    	
-    	int keyLen = key.length();
-    	for(int i=0;i<keyLen;i++)
-    	{
-    		int finalPos = Math.abs((keyLen+i-rotation) % key.length());
-    		rotatedKey[finalPos] = OriginalKey[i];
-    	}
-    	return new String(rotatedKey);
-    }
-    static HashMap<Integer, List<String>>  generateRoundKeys(String _56BitBinaryKeyRep)
-    {
-    	// Logic For the C0...Cn and D0....Dn
-    	for(int i=1;i<16;i++)
-    	{
-    		int shiftBy = rotations[i];
-    		if(i == 0)
-    		{
-    			List<String> splitKeyList = splitTheKeyIntoTwoHalves(_56BitBinaryKeyRep);
-            	String rotatedLeftKey = rotateTheKeyLeft(splitKeyList.get(0), shiftBy);
-            	String rotatedRightKey = rotateTheKeyLeft(splitKeyList.get(1), shiftBy);
-            	List<String> rotatedKeyList = new ArrayList<String>();
-            	rotatedKeyList.add(rotatedLeftKey);rotatedKeyList.add(rotatedRightKey);
-            	keyRounds.put(i, rotatedKeyList);
-    		}
-    		else
-    		{
-    			List<String> previousRoundKeys = keyRounds.get(0);
-    			String rotatedLeftKey = rotateTheKeyLeft(previousRoundKeys.get(0), shiftBy);
-            	String rotatedRightKey = rotateTheKeyLeft(previousRoundKeys.get(1), shiftBy);
-            	List<String> rotatedKeyList = new ArrayList<String>();
-            	rotatedKeyList.add(rotatedLeftKey);rotatedKeyList.add(rotatedRightKey);
-            	keyRounds.put(i, rotatedKeyList);
-    		}
-    	}
-    	return keyRounds;
-    }
+	static String rotateTheKeyLeft(String key,int rotation)
+	{
+		char []rotatedKey = new char[key.length()];
+		char []OriginalKey = key.toCharArray();
+
+		int keyLen = key.length();
+		for(int i=0;i<keyLen;i++)
+		{
+			int finalPos = Math.abs((keyLen+i-rotation) % key.length());
+			rotatedKey[finalPos] = OriginalKey[i];
+		}
+		return new String(rotatedKey);
+	}
+	static HashMap<Integer, List<String>>  generateRoundKeys(String _56BitBinaryKeyRep)
+	{
+		// Logic For the C0...Cn and D0....Dn
+		List<String> originalSplitKeyList = splitTheKeyIntoTwoHalves(_56BitBinaryKeyRep);
+		List<String> originalLeftAndRightKeyList = new ArrayList<String>(); // C0 and D0
+		originalLeftAndRightKeyList.add(originalSplitKeyList.get(0));originalLeftAndRightKeyList.add(originalSplitKeyList.get(1));
+		keyRounds.put(0, originalLeftAndRightKeyList);
+		for(int i=1;i<17;i++)
+		{
+			int shiftBy = rotations[i-1];
+
+			List<String> previousRoundKeys = keyRounds.get(i-1);
+			String rotatedLeftKey = rotateTheKeyLeft(previousRoundKeys.get(0), shiftBy);
+			String rotatedRightKey = rotateTheKeyLeft(previousRoundKeys.get(1), shiftBy);
+			List<String> rotatedKeyList = new ArrayList<String>();
+			rotatedKeyList.add(rotatedLeftKey);rotatedKeyList.add(rotatedRightKey);
+			keyRounds.put(i, rotatedKeyList);
+
+		}
+		return keyRounds;
+	}
 	private static void encrypt(StringBuilder keyStr, StringBuilder inputFile,StringBuilder outputFile) 
 	{
 		try 
@@ -236,7 +231,7 @@ public class DES {
 			//PrintWriter writer = new PrintWriter(outputFile.toString(), "UTF-8");
 			String encryptedText;
 			String _64BitBinaryKeyRep = getBinaryRepresentationOfHexString(keyStr.toString());
-			String _56BitBinaryKeyRep = applyPC1ToKey(PC1, _64BitBinaryKeyRep);
+			String _56BitBinaryKeyRep = applyPCToKey(PC1, _64BitBinaryKeyRep);
 			if(_DEBUG)
 			{
 				System.out.println("Binary Key :"+_64BitBinaryKeyRep.toString()+" ,Length is : "+_64BitBinaryKeyRep.length());
@@ -300,10 +295,10 @@ public class DES {
 		}
 		return hexKey.toString();
 	}
-	static String applyPC1ToKey(int []permutation,String OriginalKey)
+	static String applyPCToKey(int []permutation,String OriginalKey)
 	{
 		char []oldKey = OriginalKey.toCharArray();
-		char []newKey = new char[56];
+		char []newKey = new char[permutation.length];
 		for(int i=0;i<permutation.length;i++)
 		{
 			int pos = permutation[i]-1;
@@ -324,7 +319,7 @@ public class DES {
 		String keyString = getRandomString(8);	
 		String hexKeyRep = getHexRepresentationOfString(keyString);
 		String binaryKeyRep = getBinaryRepresentationOfHexString(hexKeyRep.toString());
-		String _56BitKey = applyPC1ToKey(PC1, binaryKeyRep);
+		String _56BitKey = applyPCToKey(PC1, binaryKeyRep);
 		if(_DEBUG)
 		{
 			System.out.println("Key : "+keyString);
@@ -333,7 +328,23 @@ public class DES {
 		return hexKeyRep;
 	}
 
-
+	static void consolidateRoundKeys()
+	{
+		List<String> concanatedKeyString = new ArrayList<String>();
+		Set<Integer> keySet = keyRounds.keySet();
+		for(Integer key:keySet)
+		{
+			List<String> keyValue = keyRounds.get(key);
+			StringBuffer concatenatedKey = new StringBuffer();
+			concatenatedKey.append(keyValue.get(0)).append(keyValue.get(1));
+			concanatedKeyString.add(concatenatedKey.toString());
+		}
+		for(int i=1;i<17;i++)
+		{
+			String finalKey = applyPCToKey(PC2, concanatedKeyString.get(i));
+			keyListAfterPc2.add(finalKey);
+		}
+	}
 	/**
 	 * This function Processes the Command Line Arguments.
 	 * -p for the port number you are using
