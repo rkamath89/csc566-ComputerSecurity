@@ -14,6 +14,7 @@ import gnu.getopt.Getopt;
 public class DES {
 	private static String characters = "abcdefghijklmnpqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 	private static List<String> keyList = new ArrayList<String>();
+	private static HashMap<Integer,List<String>> keyRounds = new HashMap<Integer,List<String>>();
 	public final static boolean _DEBUG = true;
 	//Use this to make key from 64 to 56 Bit
 	public static int[]  PC1 = {
@@ -136,16 +137,6 @@ public class DES {
 		, 34, 2, 42, 10, 50, 18, 58, 26
 		, 33, 1, 41, 9, 49, 17, 57, 25
 	};
-	static char[] transposeValues(int []array,char []str,int newLength)
-	{
-		char []newStr = new char[newLength];
-		for(int i=0;i<array.length;i++)
-		{
-			int newPos = array[i];
-			newStr[newPos] = str[i];
-		}
-		return newStr;
-	}
 	static String getRandomString(int len)
 	{
 
@@ -171,26 +162,6 @@ public class DES {
 	{
 		return Integer.toBinaryString(Integer.parseInt(ch));
 	}
-	public static void main(String[] args) 
-	{
-		
-		StringBuilder inputFile = new StringBuilder();
-		StringBuilder outputFile = new StringBuilder();
-		StringBuilder keyStr = new StringBuilder();
-		StringBuilder encrypt = new StringBuilder();
-		pcl(args, inputFile, outputFile, keyStr, encrypt);
-		if(keyStr.toString() != "" && encrypt.toString().equals("e"))
-		{
-			encrypt(keyStr, inputFile, outputFile);
-		} 
-		else if(keyStr.toString() != "" && encrypt.toString().equals("d"))
-		{
-			decrypt(keyStr, inputFile, outputFile);
-		}
-
-	}
-
-
 	private static void decrypt(StringBuilder keyStr, StringBuilder inputFile,StringBuilder outputFile) {
 		try {
 			PrintWriter writer = new PrintWriter(outputFile.toString(), "UTF-8");
@@ -218,19 +189,68 @@ public class DES {
 		return null;
 	}
 
-
-	private static void encrypt(StringBuilder keyStr, StringBuilder inputFile,
-			StringBuilder outputFile) {
-
-		try {
-			PrintWriter writer = new PrintWriter(outputFile.toString(), "UTF-8");
-
+    static String rotateTheKeyLeft(String key,int rotation)
+    {
+    	char []rotatedKey = new char[key.length()];
+    	char []OriginalKey = key.toCharArray();
+    	
+    	int keyLen = key.length();
+    	for(int i=0;i<keyLen;i++)
+    	{
+    		int finalPos = Math.abs((keyLen+i-rotation) % key.length());
+    		rotatedKey[finalPos] = OriginalKey[i];
+    	}
+    	return new String(rotatedKey);
+    }
+    static HashMap<Integer, List<String>>  generateRoundKeys(String _56BitBinaryKeyRep)
+    {
+    	// Logic For the C0...Cn and D0....Dn
+    	for(int i=1;i<16;i++)
+    	{
+    		int shiftBy = rotations[i];
+    		if(i == 0)
+    		{
+    			List<String> splitKeyList = splitTheKeyIntoTwoHalves(_56BitBinaryKeyRep);
+            	String rotatedLeftKey = rotateTheKeyLeft(splitKeyList.get(0), shiftBy);
+            	String rotatedRightKey = rotateTheKeyLeft(splitKeyList.get(1), shiftBy);
+            	List<String> rotatedKeyList = new ArrayList<String>();
+            	rotatedKeyList.add(rotatedLeftKey);rotatedKeyList.add(rotatedRightKey);
+            	keyRounds.put(i, rotatedKeyList);
+    		}
+    		else
+    		{
+    			List<String> previousRoundKeys = keyRounds.get(0);
+    			String rotatedLeftKey = rotateTheKeyLeft(previousRoundKeys.get(0), shiftBy);
+            	String rotatedRightKey = rotateTheKeyLeft(previousRoundKeys.get(1), shiftBy);
+            	List<String> rotatedKeyList = new ArrayList<String>();
+            	rotatedKeyList.add(rotatedLeftKey);rotatedKeyList.add(rotatedRightKey);
+            	keyRounds.put(i, rotatedKeyList);
+    		}
+    	}
+    	return keyRounds;
+    }
+	private static void encrypt(StringBuilder keyStr, StringBuilder inputFile,StringBuilder outputFile) 
+	{
+		try 
+		{
+			//PrintWriter writer = new PrintWriter(outputFile.toString(), "UTF-8");
 			String encryptedText;
-			for (String line : Files.readAllLines(Paths.get(inputFile.toString()), Charset.defaultCharset())) {
+			String _64BitBinaryKeyRep = getBinaryRepresentationOfHexString(keyStr.toString());
+			String _56BitBinaryKeyRep = applyPC1ToKey(PC1, _64BitBinaryKeyRep);
+			if(_DEBUG)
+			{
+				System.out.println("Binary Key :"+_64BitBinaryKeyRep.toString()+" ,Length is : "+_64BitBinaryKeyRep.length());
+				System.out.println("56Bit Binary Key :"+_56BitBinaryKeyRep+" ,Length is : "+_56BitBinaryKeyRep.length());
+			}
+			generateRoundKeys(_56BitBinaryKeyRep);
+			/*for (String line : Files.readAllLines(Paths.get(inputFile.toString()), Charset.defaultCharset())) 
+			{
 				encryptedText = DES_encrypt(line);
 				writer.print(encryptedText);
-			}
-		} catch (IOException e) {
+			}*/
+		} 
+		catch (Exception e) 
+		{
 			e.printStackTrace();
 		}
 
@@ -245,12 +265,12 @@ public class DES {
 		return null;
 	}
 
-    static String getBinaryRepresentationOfHexString(String hexSting)
-    {
-    	HashMap<String,Integer> hexToInt = new HashMap<String,Integer>();
-    	hexToInt.put("a",10);hexToInt.put("b",11);hexToInt.put("c",12);hexToInt.put("d",13);hexToInt.put("e",14);hexToInt.put("f",15);
-    	
-    	char[] hexChar = hexSting.toString().toCharArray();
+	static String getBinaryRepresentationOfHexString(String hexSting)
+	{
+		HashMap<String,Integer> hexToInt = new HashMap<String,Integer>();
+		hexToInt.put("a",10);hexToInt.put("b",11);hexToInt.put("c",12);hexToInt.put("d",13);hexToInt.put("e",14);hexToInt.put("f",15);
+
+		char[] hexChar = hexSting.toString().toCharArray();
 		StringBuffer binaryKeyRep = new StringBuffer();
 		for (int i = 0; i < hexChar.length; i++)
 		{
@@ -267,11 +287,11 @@ public class DES {
 			binaryKeyRep.append(binaryRep);
 		}
 		return binaryKeyRep.toString();
-    }
-    static String getHexRepresentationOfString(String keySting)
-    {
-    	StringBuffer hexKey = new StringBuffer();
-    	char[] chars = keySting.toCharArray();
+	}
+	static String getHexRepresentationOfString(String keySting)
+	{
+		StringBuffer hexKey = new StringBuffer();
+		char[] chars = keySting.toCharArray();
 		for (int i = 0; i < chars.length; i++)
 		{
 			String hexVal = convertFromDecimalToHex((int)chars[i]);
@@ -279,18 +299,26 @@ public class DES {
 			//hexKey.append(Integer.toHexString((int) chars[i]));
 		}
 		return hexKey.toString();
-    }
-    static String applyPC1ToKey(int []permutation,String OriginalKey)
-    {
-    	char []oldKey = OriginalKey.toCharArray();
-    	char []newKey = new char[56];
+	}
+	static String applyPC1ToKey(int []permutation,String OriginalKey)
+	{
+		char []oldKey = OriginalKey.toCharArray();
+		char []newKey = new char[56];
 		for(int i=0;i<permutation.length;i++)
 		{
 			int pos = permutation[i]-1;
 			newKey[i] = oldKey[pos];
 		}
 		return new String(newKey);
-    }
+	}
+	static List<String> splitTheKeyIntoTwoHalves(String key)
+	{
+		List<String> splitKey = new ArrayList<String>();
+		int mid = key.length()/2;
+		splitKey.add(key.substring(0, mid));
+		splitKey.add(key.substring(mid,key.length()));
+		return splitKey;
+	}
 	static String genDESkey()
 	{	
 		String keyString = getRandomString(8);	
@@ -301,8 +329,6 @@ public class DES {
 		{
 			System.out.println("Key : "+keyString);
 			System.out.println("Hex Key :"+hexKeyRep.toString());
-			System.out.println("Binary Key :"+binaryKeyRep.toString()+" ,Length is : "+binaryKeyRep.length());
-			System.out.println("64Bit Binary Key :"+_56BitKey+" ,Length is : "+_56BitKey.length());
 		}
 		return hexKeyRep;
 	}
@@ -334,16 +360,16 @@ public class DES {
 				break;
 			case 'e':
 				arg = g.getOptarg();
-				keyString.append(arg);
+				//keyString.append(arg);
 				encrypt.append("e");
 				break;
 			case 'd':
 				arg = g.getOptarg();
-				keyString.append(arg);
+				//keyString.append(arg);
 				encrypt.append("d");
 				break;
 			case 'k':
-				genDESkey();
+				keyString.append(genDESkey());
 				break;
 			case 'h':
 				callUseage(0);
@@ -365,6 +391,24 @@ public class DES {
 		System.out.println("-d : Decrypt the file [e.g:java DES -d <64 bit key in hex> -i <input file> -o <output file>");
 		System.out.println("-i : input file");
 		System.out.println("-o : output file");
+
+	}
+	public static void main(String[] args) 
+	{
+
+		StringBuilder inputFile = new StringBuilder();
+		StringBuilder outputFile = new StringBuilder();
+		StringBuilder keyStr = new StringBuilder();
+		StringBuilder encrypt = new StringBuilder();
+		pcl(args, inputFile, outputFile, keyStr, encrypt);
+		if(keyStr.toString() != "" && encrypt.toString().equals("e"))
+		{
+			encrypt(keyStr, inputFile, outputFile);
+		} 
+		else if(keyStr.toString() != "" && encrypt.toString().equals("d"))
+		{
+			decrypt(keyStr, inputFile, outputFile);
+		}
 
 	}
 
