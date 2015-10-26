@@ -253,28 +253,104 @@ public class DES {
 	}
 	static String feitzelComputation(String rightHalfOfString,String roundKeyString)
 	{
-		return "";
+		String expandedRightHalf = convert_32to48(rightHalfOfString); // 48 Bits
+		String roundKeyXorWithexpandedRightHalf = xor_of_values(expandedRightHalf, roundKeyString); // 48 Bits
+		StringBuffer postSubstution32BitBlock = new StringBuffer();
+		String block1 = roundKeyXorWithexpandedRightHalf.substring(0,6);
+		String block2 = roundKeyXorWithexpandedRightHalf.substring(6,12);
+		String block3 = roundKeyXorWithexpandedRightHalf.substring(12,18);
+		String block4 = roundKeyXorWithexpandedRightHalf.substring(18,24);
+		String block5 = roundKeyXorWithexpandedRightHalf.substring(24,30);
+		String block6 = roundKeyXorWithexpandedRightHalf.substring(30,36);
+		String block7 = roundKeyXorWithexpandedRightHalf.substring(36,42);
+		String block8 = roundKeyXorWithexpandedRightHalf.substring(42,48);
+		postSubstution32BitBlock = sBoxConversion(block1,S1);
+		postSubstution32BitBlock.append(sBoxConversion(block2, S2));
+		postSubstution32BitBlock.append(sBoxConversion(block3, S3));
+		postSubstution32BitBlock.append(sBoxConversion(block4, S4));
+		postSubstution32BitBlock.append(sBoxConversion(block5, S5));
+		postSubstution32BitBlock.append(sBoxConversion(block6, S6));
+		postSubstution32BitBlock.append(sBoxConversion(block7, S7));
+		postSubstution32BitBlock.append(sBoxConversion(block8, S8));
+		String final32BitStringAfterFietzel = applyPCToString(P, postSubstution32BitBlock.toString()); // 32 Bit String
+		return final32BitStringAfterFietzel;
 		// Put fietzel Here
 	}
-	static void encryptFileContents(String plainText,StringBuilder keyStr)
+	static void encryptFileContents(String plainText)
 	{
-		
-		String plainTextInHex = getHexRepresentationOfString(plainText);
+
+		String plainTextInHex = "0123456789abcdef";//getHexRepresentationOfString(plainText);
 		String plainTextInBinary = getBinaryRepresentationOfHexString(plainTextInHex);
-		String plainTextAfterIp = applyPCToKey(IP, plainTextInBinary);
-		
+		String plainTextAfterIp = applyPCToString(IP, plainTextInBinary);
+
 		List<String> splitPlainTextList = splitTheStringIntoTwoHalves(plainTextAfterIp);
 		String leftHalf = splitPlainTextList.get(0);
 		String rightHalf = splitPlainTextList.get(1);
 		//Ln = Rn-1 
 		//Rn = Ln-1 + f(Rn-1,Kn)
-		for(int i=1;i<17;i++)
+		String newLeftHalf = new String();
+		String newRightHalf = new String();; 
+		for(int i=0;i<16;i++)
 		{
-			String newLeftHalf = rightHalf;
+			newLeftHalf = rightHalf;
 			String roundKey = keyListAfterPc2.get(i);
-			String newRightHalf = leftHalf + feitzelComputation(rightHalf,roundKey);
+			newRightHalf = xor_of_values(leftHalf,feitzelComputation(rightHalf,roundKey));
+			rightHalf = newRightHalf;
+			leftHalf = newLeftHalf;
+			
 		}
+		String cipherText =new String();
+		cipherText = newRightHalf+newLeftHalf;
+		cipherText = applyPCToString(FP, cipherText);
+		System.out.println("Cipher Text in Binary: "+cipherText);
+		String binaryOfCipher = getBinaryRepresentationOfHexString("85E813540F0AB405");
+		boolean areEqual = binaryOfCipher.equalsIgnoreCase(binaryOfCipher);
+		System.out.println("THey Match : "+areEqual);
 	}
+
+	public static StringBuffer sBoxConversion(String inp,byte[][] s_box)
+	{
+		StringBuffer sb=new StringBuffer();
+		String output="";
+		sb.append(inp.charAt(0));
+		sb.append(inp.charAt(inp.length()-1));
+		String row=sb.toString();
+		int row_num=Integer.parseInt(row,2);
+		String col=inp.substring(1,inp.length()-1);
+		int col_num=Integer.parseInt(col,2);
+		int new_val=s_box[row_num][col_num];
+		String ch=String.valueOf(new_val);
+		output=convertDecimalToBinary(ch);
+		while(output.length()<4)
+		{
+			output="0"+output;
+		}
+		return new StringBuffer(output);
+	}
+	public static String convert_32to48(String input)
+	{
+		char temp_1[]=new char[E.length];
+		for(int i=0;i<48;i++)
+		{
+			int index=E[i]-1;
+			temp_1[i]=input.charAt(index);
+		}
+		return new String(temp_1);
+
+	}
+	public static String xor_of_values(String inp1,String inp2)
+	{
+		char temp_xor[]=new char[inp1.length()];
+		for(int i=0;i<inp1.length();i++)
+		{
+			if(inp1.charAt(i)==inp2.charAt(i))
+				temp_xor[i]='0';
+			else
+				temp_xor[i]='1';
+		}
+		return new String(temp_xor);
+	}
+
 	private static void encrypt(StringBuilder keyStr, StringBuilder inputFile,StringBuilder outputFile) 
 	{
 		try 
@@ -282,13 +358,14 @@ public class DES {
 			//PrintWriter writer = new PrintWriter(outputFile.toString(), "UTF-8");
 			String encryptedText;
 			String _64BitBinaryKeyRep = getBinaryRepresentationOfHexString(keyStr.toString());
-			String _56BitBinaryKeyRep = applyPCToKey(PC1, _64BitBinaryKeyRep); // Apply PC1 to the Key to reduce from 64bit to 56 bit key
+			String _56BitBinaryKeyRep = applyPCToString(PC1, _64BitBinaryKeyRep); // Apply PC1 to the Key to reduce from 64bit to 56 bit key
 			if(_DEBUG)
 			{
 				System.out.println("Binary Key :"+_64BitBinaryKeyRep.toString()+" ,Length is : "+_64BitBinaryKeyRep.length());
 				System.out.println("56Bit Binary Key :"+_56BitBinaryKeyRep+" ,Length is : "+_56BitBinaryKeyRep.length());
 			}
 			generateRoundKeys(_56BitBinaryKeyRep);
+			consolidateRoundKeys();
 			if(_DEBUG)
 			{
 				System.out.println("Round Keys Are : ");
@@ -299,10 +376,10 @@ public class DES {
 				}
 			}
 			// Create a loop here which gets 64bit blocks from the file
-			
+
 			String plainText = inputFile.toString();// I am assuming this for now, loop through the file later for all contents
-			encryptFileContents(plainText,keyStr);
-			
+			encryptFileContents(plainText);
+
 			/*for (String line : Files.readAllLines(Paths.get(inputFile.toString()), Charset.defaultCharset())) 
 			{
 				encryptedText = DES_encrypt(line);
@@ -334,7 +411,7 @@ public class DES {
 		StringBuffer binaryKeyRep = new StringBuffer();
 		for (int i = 0; i < hexChar.length; i++)
 		{
-			String ch = Character.toString(hexChar[i]);
+			String ch = Character.toString(hexChar[i]).toLowerCase();
 			if(hexToInt.containsKey(ch))
 			{
 				ch = hexToInt.get(ch).toString();
@@ -360,7 +437,7 @@ public class DES {
 		}
 		return hexKey.toString();
 	}
-	static String applyPCToKey(int []permutation,String OriginalKey)
+	static String applyPCToString(int []permutation,String OriginalKey)
 	{
 		char []oldKey = OriginalKey.toCharArray();
 		char []newKey = new char[permutation.length];
@@ -384,7 +461,7 @@ public class DES {
 		String keyString = getRandomString(8);	
 		String hexKeyRep = getHexRepresentationOfString(keyString);
 		String binaryKeyRep = getBinaryRepresentationOfHexString(hexKeyRep.toString());
-		String _56BitKey = applyPCToKey(PC1, binaryKeyRep);
+		String _56BitKey = applyPCToString(PC1, binaryKeyRep);
 		if(_DEBUG)
 		{
 			System.out.println("Key : "+keyString);
@@ -406,7 +483,7 @@ public class DES {
 		}
 		for(int i=1;i<17;i++)
 		{
-			String finalKey = applyPCToKey(PC2, concanatedKeyString.get(i));
+			String finalKey = applyPCToString(PC2, concanatedKeyString.get(i));
 			keyListAfterPc2.add(finalKey);
 		}
 	}

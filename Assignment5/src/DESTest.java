@@ -90,10 +90,16 @@ public class DESTest {
 		Assert.assertEquals("110010110011110110001011000011100001011111110101",key);
 		
 	}
+	@Test
 	public void IntitialPermuatationTest()
 	{
 		String plainTextInBinary="0000000100100011010001010110011110001001101010111100110111101111";
-		String plainTextAfterIP = DES.applyPCToKey(DES.IP, plainTextInBinary);
+		String plainTextAfterIP = DES.applyPCToString(DES.IP, plainTextInBinary);
 		Assert.assertEquals("1100110000000000110011001111111111110000101010101111000010101010", plainTextAfterIP);
+	}
+	@Test
+	public void testFietzelComputation()
+	{
+		String _64BitKey = "0001001100110100010101110111100110011011101111001101111111110001";
 	}
 }
