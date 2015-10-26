@@ -10,8 +10,8 @@ public class DESTest {
 	@Test
 	public void TestBinaryRepresentationOfHexString() 
 	{
-		String binaryRep = DES.getBinaryRepresentationOfHexString("ab");
-		String expectedBinaryRep = "1010"+"1011";
+		String binaryRep = DES.getBinaryRepresentationOfHexString("133457799BBCDFF1");
+		String expectedBinaryRep = "0001001100110100010101110111100110011011101111001101111111110001";
 		Assert.assertEquals(expectedBinaryRep,binaryRep);
 	}
 	

@@ -303,8 +303,8 @@ public class DES {
 		cipherText = newRightHalf+newLeftHalf;
 		cipherText = applyPCToString(FP, cipherText);
 		System.out.println("Cipher Text in Binary: "+cipherText);
-		String binaryOfCipher = getBinaryRepresentationOfHexString("85E813540F0AB405");
-		boolean areEqual = binaryOfCipher.equalsIgnoreCase(binaryOfCipher);
+		String binaryOfCipher = getBinaryRepresentationOfHexString("85e813540f0ab405");
+		boolean areEqual = binaryOfCipher.equalsIgnoreCase(cipherText);
 		System.out.println("THey Match : "+areEqual);
 	}
 
@@ -459,7 +459,7 @@ public class DES {
 	static String genDESkey()
 	{	
 		String keyString = getRandomString(8);	
-		String hexKeyRep = getHexRepresentationOfString(keyString);
+		String hexKeyRep = "133457799BBCDFF1";//getHexRepresentationOfString(keyString);
 		String binaryKeyRep = getBinaryRepresentationOfHexString(hexKeyRep.toString());
 		String _56BitKey = applyPCToString(PC1, binaryKeyRep);
 		if(_DEBUG)
