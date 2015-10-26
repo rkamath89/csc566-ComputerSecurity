@@ -14,7 +14,14 @@ public class DESTest {
 		String expectedBinaryRep = "0001001100110100010101110111100110011011101111001101111111110001";
 		Assert.assertEquals(expectedBinaryRep,binaryRep);
 	}
-	
+	@Test
+	public void TestBinaryToHexConverter()
+	{
+		String cipherTextInBinary = "1000010111101000000100110101010000001111000010101011010000000101";
+		String cipherTextInHex = "85e813540f0ab405";
+		Assert.assertEquals(cipherTextInHex,DES.convertFromBinaryToHex(cipherTextInBinary));
+		
+	}
 	@Test
 	public void testKeyGen() 
 	{

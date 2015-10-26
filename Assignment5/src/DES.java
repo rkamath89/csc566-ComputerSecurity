@@ -16,7 +16,8 @@ public class DES {
 	static String characters = "abcdefghijklmnpqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 	static List<String> keyListAfterPc2 = new ArrayList<String>();
 	static HashMap<Integer,List<String>> keyRounds = new HashMap<Integer,List<String>>();
-	public final static boolean _DEBUG = true;
+	public final static boolean _DEBUG = false;
+	public static String _cipherText = new String();
 	//Use this to make key from 64 to 56 Bit
 	public static int[]  PC1 = {
 		57, 49, 41, 33, 25, 17, 9 ,
@@ -190,6 +191,18 @@ public class DES {
 	{
 		return Integer.toBinaryString(Integer.parseInt(ch));
 	}
+	static String convertFromBinaryToHex(String binaryStr)
+	{
+		StringBuffer hexStr = new StringBuffer();
+		for(int i=0;i<binaryStr.length();i=i+4)
+		{
+			int decimal = Integer.parseInt(binaryStr.substring(i,i+4),2);
+			 String val = Integer.toString(decimal,16);
+			 hexStr.append(val);
+		
+		}
+		return hexStr.toString();
+	}
 	private static void decrypt(StringBuilder keyStr, StringBuilder inputFile,StringBuilder outputFile) {
 		try {
 			PrintWriter writer = new PrintWriter(outputFile.toString(), "UTF-8");
@@ -276,10 +289,16 @@ public class DES {
 		return final32BitStringAfterFietzel;
 		// Put fietzel Here
 	}
-	static void encryptFileContents(String plainText)
+	static String encryptFileContents(String plainText,boolean decrypt)
 	{
 
 		String plainTextInHex = "0123456789abcdef";//getHexRepresentationOfString(plainText);
+		
+		if(decrypt)
+		{
+			plainTextInHex = convertFromBinaryToHex(_cipherText);//"85e813540f0ab405";// This is the decruptionText in HEx
+		}
+		System.out.println("PlainText is : "+plainTextInHex);
 		String plainTextInBinary = getBinaryRepresentationOfHexString(plainTextInHex);
 		String plainTextAfterIp = applyPCToString(IP, plainTextInBinary);
 
@@ -290,22 +309,46 @@ public class DES {
 		//Rn = Ln-1 + f(Rn-1,Kn)
 		String newLeftHalf = new String();
 		String newRightHalf = new String();; 
-		for(int i=0;i<16;i++)
+		if(decrypt)
 		{
-			newLeftHalf = rightHalf;
-			String roundKey = keyListAfterPc2.get(i);
-			newRightHalf = xor_of_values(leftHalf,feitzelComputation(rightHalf,roundKey));
-			rightHalf = newRightHalf;
-			leftHalf = newLeftHalf;
-			
+			for(int i=15;i>=0;i--)
+			{
+				newLeftHalf = rightHalf;
+				String roundKey = keyListAfterPc2.get(i);
+				newRightHalf = xor_of_values(leftHalf,feitzelComputation(rightHalf,roundKey));
+				rightHalf = newRightHalf;
+				leftHalf = newLeftHalf;
+			}
 		}
-		String cipherText =new String();
-		cipherText = newRightHalf+newLeftHalf;
-		cipherText = applyPCToString(FP, cipherText);
-		System.out.println("Cipher Text in Binary: "+cipherText);
-		String binaryOfCipher = getBinaryRepresentationOfHexString("85e813540f0ab405");
-		boolean areEqual = binaryOfCipher.equalsIgnoreCase(cipherText);
-		System.out.println("THey Match : "+areEqual);
+		else
+		{
+			for(int i=0;i<16;i++)
+			{
+				newLeftHalf = rightHalf;
+				String roundKey = keyListAfterPc2.get(i);
+				newRightHalf = xor_of_values(leftHalf,feitzelComputation(rightHalf,roundKey));
+				rightHalf = newRightHalf;
+				leftHalf = newLeftHalf;
+			}
+		}
+		if(decrypt)
+		{
+			String decryptedPlainText =new String();
+			decryptedPlainText = newRightHalf+newLeftHalf;
+			decryptedPlainText = applyPCToString(FP, decryptedPlainText);
+			return decryptedPlainText;
+		}
+		else
+		{
+			String cipherText =new String();
+			cipherText = newRightHalf+newLeftHalf;
+			_cipherText = applyPCToString(FP, cipherText);
+			return _cipherText;
+		}
+		//System.out.println("Cipher Text in Binary: "+cipherText);
+		//String binaryOfCipher = getBinaryRepresentationOfHexString("85e813540f0ab405");
+		//boolean areEqual = binaryOfCipher.equalsIgnoreCase(cipherText);
+		///System.out.println("THey Match : "+areEqual);
 	}
 
 	public static StringBuffer sBoxConversion(String inp,byte[][] s_box)
@@ -351,8 +394,9 @@ public class DES {
 		return new String(temp_xor);
 	}
 
-	private static void encrypt(StringBuilder keyStr, StringBuilder inputFile,StringBuilder outputFile) 
+	static String encrypt(StringBuilder keyStr, StringBuilder inputFile,StringBuilder outputFile) 
 	{
+		String encryptedPlainText = "";
 		try 
 		{
 			//PrintWriter writer = new PrintWriter(outputFile.toString(), "UTF-8");
@@ -378,7 +422,7 @@ public class DES {
 			// Create a loop here which gets 64bit blocks from the file
 
 			String plainText = inputFile.toString();// I am assuming this for now, loop through the file later for all contents
-			encryptFileContents(plainText);
+			encryptedPlainText =  encryptFileContents(plainText,false);
 
 			/*for (String line : Files.readAllLines(Paths.get(inputFile.toString()), Charset.defaultCharset())) 
 			{
@@ -390,6 +434,7 @@ public class DES {
 		{
 			e.printStackTrace();
 		}
+		return encryptedPlainText;
 
 
 	}
@@ -494,7 +539,7 @@ public class DES {
 	 */
 	private static void pcl(String[] args, StringBuilder inputFile,
 			StringBuilder outputFile, StringBuilder keyString,
-			StringBuilder encrypt) {
+			StringBuilder encrypt,StringBuilder decrypt) {
 		/*
 		 * http://www.urbanophile.com/arenn/hacking/getopt/gnu.getopt.Getopt.html
 		 */	
@@ -519,7 +564,7 @@ public class DES {
 			case 'd':
 				arg = g.getOptarg();
 				//keyString.append(arg);
-				encrypt.append("d");
+				decrypt.append("d");
 				break;
 			case 'k':
 				keyString.append(genDESkey());
@@ -553,14 +598,20 @@ public class DES {
 		StringBuilder outputFile = new StringBuilder();
 		StringBuilder keyStr = new StringBuilder();
 		StringBuilder encrypt = new StringBuilder();
-		pcl(args, inputFile, outputFile, keyStr, encrypt);
+		StringBuilder decrypt = new StringBuilder();
+		pcl(args, inputFile, outputFile, keyStr, encrypt,decrypt);
 		if(keyStr.toString() != "" && encrypt.toString().equals("e"))
 		{
-			encrypt(keyStr, inputFile, outputFile);
+			System.out.println("----ENCRYPTION-----");
+			String encryptedPlainText = encrypt(keyStr, inputFile, outputFile);
+			System.out.println("Encrypted Plain Text is : "+encryptedPlainText);
 		} 
-		else if(keyStr.toString() != "" && encrypt.toString().equals("d"))
+		if(keyStr.toString() != "" && decrypt.toString().equals("d"))
 		{
-			decrypt(keyStr, inputFile, outputFile);
+			System.out.println("----DECRYPTION-----");
+			String decryptedPlainText = encryptFileContents("",true);
+			decryptedPlainText = convertFromBinaryToHex(decryptedPlainText);
+			System.out.println("Decrypted Text is : "+decryptedPlainText);
 		}
 
 	}
