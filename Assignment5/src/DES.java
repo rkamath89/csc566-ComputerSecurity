@@ -236,12 +236,28 @@ public class DES {
 
 			for (String line : lines) 
 			{
-				String decryptedPlainText = DES_decrypt(null,line);
-				decryptedPlainText = convertFromBinaryToHex(decryptedPlainText);
-				decryptedPlainText = convertHexToString(decryptedPlainText);
-				System.out.println("Decrypted Clear Text is : "+decryptedPlainText);
-				//encryptedText = DES_decrypt(IVStr, line);
-				writer.print(decryptedPlainText);
+				for(int startPos=0;startPos<line.length();startPos=startPos+16)
+				{
+					String decryptedPlainText = DES_decrypt(null,line.substring(startPos,startPos+16));
+					decryptedPlainText = convertFromBinaryToHex(decryptedPlainText);
+					if(decryptedPlainText.length() >= 4)
+					{
+						String val = decryptedPlainText.substring(decryptedPlainText.length()-4, decryptedPlainText.length()-2);
+						if("30".equals(val)) // Means last 2 hexChar must indicate the Padding Length
+						{
+							int len = decryptedPlainText.length();
+							String paddingLengthStr = decryptedPlainText.substring(len-2, len);
+							int paddingLength =  Integer.parseInt(paddingLengthStr)-30;
+							paddingLength = len - paddingLength*2;
+							decryptedPlainText = decryptedPlainText.substring(0,paddingLength);
+						
+						}
+					}
+					decryptedPlainText = convertHexToString(decryptedPlainText);
+					System.out.println("Decrypted Clear Text is : "+decryptedPlainText);
+					//encryptedText = DES_decrypt(IVStr, line);
+					writer.print(decryptedPlainText);
+				}
 				
 			}
 			writer.close();
@@ -349,6 +365,7 @@ public class DES {
 
 		String plainTextInHex = getHexRepresentationOfString(plainText);//"0123456789abcdef";
 		System.out.println("PlainText to encrypt is : "+plainText);
+		System.out.println("PlainText in HEX is : "+plainTextInHex);
 		String plainTextInBinary = getBinaryRepresentationOfHexString(plainTextInHex);
 		String plainTextAfterIp = applyPCToString(IP, plainTextInBinary);
 		List<String> splitPlainTextList = splitTheStringIntoTwoHalves(plainTextAfterIp);
@@ -423,12 +440,28 @@ public class DES {
 		try 
 		{
 			PrintWriter writer = new PrintWriter(outputFile.toString(), "UTF-8");			
-			
-			for (String line : Files.readAllLines(Paths.get(inputFile.toString()), Charset.defaultCharset())) 
+			List<String> allLines = Files.readAllLines(Paths.get(inputFile.toString()), Charset.defaultCharset());
+			for (String line : allLines) 
 			{
-				String encryptedPlainTextInBinary =  encryptFileContents(line,false);
-				encryptedPlainTextInHex = convertFromBinaryToHex(encryptedPlainTextInBinary);
-				writer.print(encryptedPlainTextInHex);
+				int paddingReq = line.length() % 8;
+				paddingReq = 8-paddingReq;
+				if(paddingReq != 0 ) // Means we Need to pad the Line
+				{
+					StringBuffer paddedStr = new StringBuffer();
+					for(int i=0;i<paddingReq-1;i++)
+					{
+						paddedStr.append('0');
+					}
+					paddedStr.append(paddingReq);
+					line = line+paddedStr;
+				}
+				for(int startPos=0;startPos<line.length();startPos=startPos+8)
+				{
+					String encryptedPlainTextInBinary =  encryptFileContents(line.substring(startPos,startPos+8),false);
+					encryptedPlainTextInHex = convertFromBinaryToHex(encryptedPlainTextInBinary);
+					writer.print(encryptedPlainTextInHex);
+				}
+				
 			}
 			writer.close();
 		} 
