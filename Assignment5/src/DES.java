@@ -18,6 +18,7 @@ public class DES {
 	static HashMap<Integer,List<String>> keyRounds = new HashMap<Integer,List<String>>();
 	public final static boolean _DEBUG = false;
 	public static String _cipherText = new String();
+	static String _56BitKey = new String();
 	//Use this to make key from 64 to 56 Bit
 	public static int[]  PC1 = {
 		57, 49, 41, 33, 25, 17, 9 ,
@@ -191,6 +192,28 @@ public class DES {
 	{
 		return Integer.toBinaryString(Integer.parseInt(ch));
 	}
+	public static String convertHexToString(String hex)
+	{
+
+		  StringBuilder sb = new StringBuilder();
+		  StringBuilder temp = new StringBuilder();
+		  
+		  //49204c6f7665204a617661 split into two characters 49, 20, 4c...
+		  for( int i=0; i<hex.length()-1; i+=2 ){
+			  
+		      //grab the hex in pairs
+		      String output = hex.substring(i, (i + 2));
+		      //convert hex to decimal
+		      int decimal = Integer.parseInt(output, 16);
+		      //convert the decimal to character
+		      sb.append((char)decimal);
+			  
+		      temp.append(decimal);
+		  }
+		  //System.out.println("Decimal : " + temp.toString());
+		  
+		  return sb.toString();
+	  }
 	static String convertFromBinaryToHex(String binaryStr)
 	{
 		StringBuffer hexStr = new StringBuffer();
@@ -225,9 +248,35 @@ public class DES {
 	 * TODO: You need to write the DES encryption here.
 	 * @param line
 	 */
-	private static String DES_decrypt(String iVStr, String line) {
+	private static String DES_decrypt(String iVStr, String line) 
+	{
+		String plainTextInHex = getHexRepresentationOfString(line);//"0123456789abcdef";
+		plainTextInHex = convertFromBinaryToHex(_cipherText);//"85e813540f0ab405";// This is the decruptionText in HEx
+		System.out.println("CipherText in Hex to Decrypt is : "+plainTextInHex);
+		String plainTextInBinary = getBinaryRepresentationOfHexString(plainTextInHex);
+		String plainTextAfterIp = applyPCToString(IP, plainTextInBinary);
+		List<String> splitPlainTextList = splitTheStringIntoTwoHalves(plainTextAfterIp);
+		String leftHalf = splitPlainTextList.get(0);
+		String rightHalf = splitPlainTextList.get(1);
+		//Ln = Rn-1 
+		//Rn = Ln-1 + f(Rn-1,Kn)
+		String newLeftHalf = new String();
+		String newRightHalf = new String();; 
 
-		return null;
+		for(int i=15;i>=0;i--)
+		{
+			newLeftHalf = rightHalf;
+			String roundKey = keyListAfterPc2.get(i);
+			newRightHalf = xor_of_values(leftHalf,feitzelComputation(rightHalf,roundKey));
+			rightHalf = newRightHalf;
+			leftHalf = newLeftHalf;
+		}
+
+		String decryptedPlainText =new String();
+		decryptedPlainText = newRightHalf+newLeftHalf;
+		decryptedPlainText = applyPCToString(FP, decryptedPlainText);
+		return decryptedPlainText;
+
 	}
 
 	static String rotateTheKeyLeft(String key,int rotation)
@@ -246,6 +295,7 @@ public class DES {
 	static HashMap<Integer, List<String>>  generateRoundKeys(String _56BitBinaryKeyRep)
 	{
 		// Logic For the C0...Cn and D0....Dn
+		keyRounds.clear();
 		List<String> originalSplitKeyList = splitTheStringIntoTwoHalves(_56BitBinaryKeyRep);
 		List<String> originalLeftAndRightKeyList = new ArrayList<String>(); // C0 and D0
 		originalLeftAndRightKeyList.add(originalSplitKeyList.get(0));originalLeftAndRightKeyList.add(originalSplitKeyList.get(1));
@@ -292,16 +342,10 @@ public class DES {
 	static String encryptFileContents(String plainText,boolean decrypt)
 	{
 
-		String plainTextInHex = "0123456789abcdef";//getHexRepresentationOfString(plainText);
-		
-		if(decrypt)
-		{
-			plainTextInHex = convertFromBinaryToHex(_cipherText);//"85e813540f0ab405";// This is the decruptionText in HEx
-		}
-		System.out.println("PlainText is : "+plainTextInHex);
+		String plainTextInHex = getHexRepresentationOfString(plainText);//"0123456789abcdef";
+		System.out.println("PlainText to encrypt is : "+plainText);
 		String plainTextInBinary = getBinaryRepresentationOfHexString(plainTextInHex);
 		String plainTextAfterIp = applyPCToString(IP, plainTextInBinary);
-
 		List<String> splitPlainTextList = splitTheStringIntoTwoHalves(plainTextAfterIp);
 		String leftHalf = splitPlainTextList.get(0);
 		String rightHalf = splitPlainTextList.get(1);
@@ -309,46 +353,20 @@ public class DES {
 		//Rn = Ln-1 + f(Rn-1,Kn)
 		String newLeftHalf = new String();
 		String newRightHalf = new String();; 
-		if(decrypt)
+		for(int i=0;i<16;i++)
 		{
-			for(int i=15;i>=0;i--)
-			{
-				newLeftHalf = rightHalf;
-				String roundKey = keyListAfterPc2.get(i);
-				newRightHalf = xor_of_values(leftHalf,feitzelComputation(rightHalf,roundKey));
-				rightHalf = newRightHalf;
-				leftHalf = newLeftHalf;
-			}
+			newLeftHalf = rightHalf;
+			String roundKey = keyListAfterPc2.get(i);
+			newRightHalf = xor_of_values(leftHalf,feitzelComputation(rightHalf,roundKey));
+			rightHalf = newRightHalf;
+			leftHalf = newLeftHalf;
 		}
-		else
-		{
-			for(int i=0;i<16;i++)
-			{
-				newLeftHalf = rightHalf;
-				String roundKey = keyListAfterPc2.get(i);
-				newRightHalf = xor_of_values(leftHalf,feitzelComputation(rightHalf,roundKey));
-				rightHalf = newRightHalf;
-				leftHalf = newLeftHalf;
-			}
-		}
-		if(decrypt)
-		{
-			String decryptedPlainText =new String();
-			decryptedPlainText = newRightHalf+newLeftHalf;
-			decryptedPlainText = applyPCToString(FP, decryptedPlainText);
-			return decryptedPlainText;
-		}
-		else
-		{
-			String cipherText =new String();
-			cipherText = newRightHalf+newLeftHalf;
-			_cipherText = applyPCToString(FP, cipherText);
-			return _cipherText;
-		}
-		//System.out.println("Cipher Text in Binary: "+cipherText);
-		//String binaryOfCipher = getBinaryRepresentationOfHexString("85e813540f0ab405");
-		//boolean areEqual = binaryOfCipher.equalsIgnoreCase(cipherText);
-		///System.out.println("THey Match : "+areEqual);
+
+		String cipherText =new String();
+		cipherText = newRightHalf+newLeftHalf;
+		_cipherText = applyPCToString(FP, cipherText);
+		return _cipherText;
+
 	}
 
 	public static StringBuffer sBoxConversion(String inp,byte[][] s_box)
@@ -396,33 +414,17 @@ public class DES {
 
 	static String encrypt(StringBuilder keyStr, StringBuilder inputFile,StringBuilder outputFile) 
 	{
-		String encryptedPlainText = "";
+		String encryptedPlainTextInHex = "";
 		try 
 		{
 			//PrintWriter writer = new PrintWriter(outputFile.toString(), "UTF-8");
 			String encryptedText;
-			String _64BitBinaryKeyRep = getBinaryRepresentationOfHexString(keyStr.toString());
-			String _56BitBinaryKeyRep = applyPCToString(PC1, _64BitBinaryKeyRep); // Apply PC1 to the Key to reduce from 64bit to 56 bit key
-			if(_DEBUG)
-			{
-				System.out.println("Binary Key :"+_64BitBinaryKeyRep.toString()+" ,Length is : "+_64BitBinaryKeyRep.length());
-				System.out.println("56Bit Binary Key :"+_56BitBinaryKeyRep+" ,Length is : "+_56BitBinaryKeyRep.length());
-			}
-			generateRoundKeys(_56BitBinaryKeyRep);
-			consolidateRoundKeys();
-			if(_DEBUG)
-			{
-				System.out.println("Round Keys Are : ");
-				Set<Integer> keys = keyRounds.keySet();
-				for(Integer keyVal : keys)
-				{
-					System.out.println("Key for Round "+keyVal+" is "+keyRounds.get(keyVal));
-				}
-			}
+			
 			// Create a loop here which gets 64bit blocks from the file
 
-			String plainText = inputFile.toString();// I am assuming this for now, loop through the file later for all contents
-			encryptedPlainText =  encryptFileContents(plainText,false);
+			String plainText = "RAHULKAM";//inputFile.toString();// I am assuming this for now, loop through the file later for all contents
+			String encryptedPlainTextInBinary =  encryptFileContents(plainText,false);
+			encryptedPlainTextInHex = convertFromBinaryToHex(encryptedPlainTextInBinary);
 
 			/*for (String line : Files.readAllLines(Paths.get(inputFile.toString()), Charset.defaultCharset())) 
 			{
@@ -434,7 +436,7 @@ public class DES {
 		{
 			e.printStackTrace();
 		}
-		return encryptedPlainText;
+		return encryptedPlainTextInHex;
 
 
 	}
@@ -501,22 +503,30 @@ public class DES {
 		splitKey.add(key.substring(mid,key.length()));
 		return splitKey;
 	}
-	static String genDESkey()
+	static void genDESkey()
 	{	
 		String keyString = getRandomString(8);	
-		String hexKeyRep = "133457799BBCDFF1";//getHexRepresentationOfString(keyString);
+		String hexKeyRep = getHexRepresentationOfString(keyString);//"133457799BBCDFF1";
 		String binaryKeyRep = getBinaryRepresentationOfHexString(hexKeyRep.toString());
-		String _56BitKey = applyPCToString(PC1, binaryKeyRep);
+		_56BitKey = applyPCToString(PC1, binaryKeyRep);
+		generateRoundKeys(_56BitKey);
+		consolidateRoundKeys();
+		System.out.println("Key : "+keyString);
 		if(_DEBUG)
 		{
-			System.out.println("Key : "+keyString);
 			System.out.println("Hex Key :"+hexKeyRep.toString());
+			System.out.println("Round Keys Are : ");
+			Set<Integer> keys = keyRounds.keySet();
+			for(Integer keyVal : keys)
+			{
+				System.out.println("Key for Round "+keyVal+" is "+keyRounds.get(keyVal));
+			}
 		}
-		return hexKeyRep;
 	}
 
 	static void consolidateRoundKeys()
 	{
+		keyListAfterPc2.clear();
 		List<String> concanatedKeyString = new ArrayList<String>();
 		Set<Integer> keySet = keyRounds.keySet();
 		for(Integer key:keySet)
@@ -567,7 +577,8 @@ public class DES {
 				decrypt.append("d");
 				break;
 			case 'k':
-				keyString.append(genDESkey());
+				genDESkey();
+				keyString.append(_56BitKey);
 				break;
 			case 'h':
 				callUseage(0);
@@ -604,14 +615,15 @@ public class DES {
 		{
 			System.out.println("----ENCRYPTION-----");
 			String encryptedPlainText = encrypt(keyStr, inputFile, outputFile);
-			System.out.println("Encrypted Plain Text is : "+encryptedPlainText);
+			System.out.println("Encrypted Plain Text in HEX is : "+encryptedPlainText);
 		} 
 		if(keyStr.toString() != "" && decrypt.toString().equals("d"))
 		{
 			System.out.println("----DECRYPTION-----");
-			String decryptedPlainText = encryptFileContents("",true);
+			String decryptedPlainText = DES_decrypt(null,_cipherText);
 			decryptedPlainText = convertFromBinaryToHex(decryptedPlainText);
-			System.out.println("Decrypted Text is : "+decryptedPlainText);
+			decryptedPlainText = convertHexToString(decryptedPlainText);
+			System.out.println("Decrypted Clear Text is : "+decryptedPlainText);
 		}
 
 	}
