@@ -230,14 +230,21 @@ public class DES {
 		try {
 			PrintWriter writer = new PrintWriter(outputFile.toString(), "UTF-8");
 			List<String> lines = Files.readAllLines(Paths.get(inputFile.toString()), Charset.defaultCharset());
-			String IVStr = lines.get(0);
-			lines.remove(0);
+			//String IVStr = lines.get(0);
+			//lines.remove(0);
 			String encryptedText;
 
-			for (String line : lines) {
-				encryptedText = DES_decrypt(IVStr, line);
-				writer.print(encryptedText);
+			for (String line : lines) 
+			{
+				String decryptedPlainText = DES_decrypt(null,line);
+				decryptedPlainText = convertFromBinaryToHex(decryptedPlainText);
+				decryptedPlainText = convertHexToString(decryptedPlainText);
+				System.out.println("Decrypted Clear Text is : "+decryptedPlainText);
+				//encryptedText = DES_decrypt(IVStr, line);
+				writer.print(decryptedPlainText);
+				
 			}
+			writer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -248,12 +255,10 @@ public class DES {
 	 * TODO: You need to write the DES encryption here.
 	 * @param line
 	 */
-	private static String DES_decrypt(String iVStr, String line) 
+	private static String DES_decrypt(String iVStr, String encryptedLineInHex) 
 	{
-		String plainTextInHex = getHexRepresentationOfString(line);//"0123456789abcdef";
-		plainTextInHex = convertFromBinaryToHex(_cipherText);//"85e813540f0ab405";// This is the decruptionText in HEx
-		System.out.println("CipherText in Hex to Decrypt is : "+plainTextInHex);
-		String plainTextInBinary = getBinaryRepresentationOfHexString(plainTextInHex);
+		System.out.println("CipherText in Hex to Decrypt is : "+encryptedLineInHex);
+		String plainTextInBinary = getBinaryRepresentationOfHexString(encryptedLineInHex);
 		String plainTextAfterIp = applyPCToString(IP, plainTextInBinary);
 		List<String> splitPlainTextList = splitTheStringIntoTwoHalves(plainTextAfterIp);
 		String leftHalf = splitPlainTextList.get(0);
@@ -417,23 +422,19 @@ public class DES {
 		String encryptedPlainTextInHex = "";
 		try 
 		{
-			//PrintWriter writer = new PrintWriter(outputFile.toString(), "UTF-8");
-			String encryptedText;
+			PrintWriter writer = new PrintWriter(outputFile.toString(), "UTF-8");			
 			
-			// Create a loop here which gets 64bit blocks from the file
-
-			String plainText = "RAHULKAM";//inputFile.toString();// I am assuming this for now, loop through the file later for all contents
-			String encryptedPlainTextInBinary =  encryptFileContents(plainText,false);
-			encryptedPlainTextInHex = convertFromBinaryToHex(encryptedPlainTextInBinary);
-
-			/*for (String line : Files.readAllLines(Paths.get(inputFile.toString()), Charset.defaultCharset())) 
+			for (String line : Files.readAllLines(Paths.get(inputFile.toString()), Charset.defaultCharset())) 
 			{
-				encryptedText = DES_encrypt(line);
-				writer.print(encryptedText);
-			}*/
+				String encryptedPlainTextInBinary =  encryptFileContents(line,false);
+				encryptedPlainTextInHex = convertFromBinaryToHex(encryptedPlainTextInBinary);
+				writer.print(encryptedPlainTextInHex);
+			}
+			writer.close();
 		} 
 		catch (Exception e) 
 		{
+			System.out.println("Crashed During ENCRYPT");
 			e.printStackTrace();
 		}
 		return encryptedPlainTextInHex;
@@ -503,15 +504,18 @@ public class DES {
 		splitKey.add(key.substring(mid,key.length()));
 		return splitKey;
 	}
-	static void genDESkey()
+	static String genDESkey()
 	{	
 		String keyString = getRandomString(8);	
-		String hexKeyRep = getHexRepresentationOfString(keyString);//"133457799BBCDFF1";
-		String binaryKeyRep = getBinaryRepresentationOfHexString(hexKeyRep.toString());
+		return getHexRepresentationOfString(keyString);//"133457799BBCDFF1";
+	}
+    static void generateRoundKeysAndPerformConsolidation(String hexKeyRep)
+    {
+    	String binaryKeyRep = getBinaryRepresentationOfHexString(hexKeyRep.toString());
 		_56BitKey = applyPCToString(PC1, binaryKeyRep);
 		generateRoundKeys(_56BitKey);
 		consolidateRoundKeys();
-		System.out.println("Key : "+keyString);
+		System.out.println("Key : "+hexKeyRep);
 		if(_DEBUG)
 		{
 			System.out.println("Hex Key :"+hexKeyRep.toString());
@@ -522,8 +526,7 @@ public class DES {
 				System.out.println("Key for Round "+keyVal+" is "+keyRounds.get(keyVal));
 			}
 		}
-	}
-
+    }
 	static void consolidateRoundKeys()
 	{
 		keyListAfterPc2.clear();
@@ -568,17 +571,17 @@ public class DES {
 				break;
 			case 'e':
 				arg = g.getOptarg();
-				//keyString.append(arg);
+				keyString.append(arg);
 				encrypt.append("e");
 				break;
 			case 'd':
 				arg = g.getOptarg();
-				//keyString.append(arg);
+				keyString.append(arg);
 				decrypt.append("d");
 				break;
 			case 'k':
-				genDESkey();
-				keyString.append(_56BitKey);
+				System.out.println("Generated Key is : "+genDESkey());
+				System.out.println();
 				break;
 			case 'h':
 				callUseage(0);
@@ -595,11 +598,9 @@ public class DES {
 	private static void callUseage(int exitStatus) {
 
 		System.out.println("-h : Help Options");
-		System.out.println("-k : Generate DES key and Encode in HEX");
+		System.out.println("-k : Generate DES key and Encode in HEX and Display");
 		System.out.println("-e : Encrypt the file [e.g: java DES -e <64 bit key in hex> -i <input file> -o <output file>");
 		System.out.println("-d : Decrypt the file [e.g:java DES -d <64 bit key in hex> -i <input file> -o <output file>");
-		System.out.println("-i : input file");
-		System.out.println("-o : output file");
 
 	}
 	public static void main(String[] args) 
@@ -613,17 +614,19 @@ public class DES {
 		pcl(args, inputFile, outputFile, keyStr, encrypt,decrypt);
 		if(keyStr.toString() != "" && encrypt.toString().equals("e"))
 		{
+			generateRoundKeysAndPerformConsolidation(keyStr.toString());
 			System.out.println("----ENCRYPTION-----");
 			String encryptedPlainText = encrypt(keyStr, inputFile, outputFile);
 			System.out.println("Encrypted Plain Text in HEX is : "+encryptedPlainText);
+			System.out.println("----ENCRYPTION COMPLETED-----");
 		} 
 		if(keyStr.toString() != "" && decrypt.toString().equals("d"))
 		{
 			System.out.println("----DECRYPTION-----");
-			String decryptedPlainText = DES_decrypt(null,_cipherText);
-			decryptedPlainText = convertFromBinaryToHex(decryptedPlainText);
-			decryptedPlainText = convertHexToString(decryptedPlainText);
-			System.out.println("Decrypted Clear Text is : "+decryptedPlainText);
+			generateRoundKeysAndPerformConsolidation(keyStr.toString());
+			decrypt(keyStr, inputFile, outputFile);
+			System.out.println("----DECRYPTION COMPLETED-----");
+			
 		}
 
 	}
