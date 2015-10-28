@@ -1,0 +1,2 @@
+-e 6c4a655249696142  -i input.txt -o encrypted.txt
+-d 6c4a655249696142  -i encrypted.txt -o decrypted.txt

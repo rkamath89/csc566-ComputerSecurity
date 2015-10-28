@@ -236,6 +236,11 @@ public class DES {
 
 			for (String line : lines) 
 			{
+				if("0A".equals(line))
+				{
+					writer.println();
+					continue;
+				}
 				for(int startPos=0;startPos<line.length();startPos=startPos+16)
 				{
 					String decryptedPlainText = DES_decrypt(null,line.substring(startPos,startPos+16));
@@ -459,9 +464,9 @@ public class DES {
 				{
 					String encryptedPlainTextInBinary =  encryptFileContents(line.substring(startPos,startPos+8),false);
 					encryptedPlainTextInHex = convertFromBinaryToHex(encryptedPlainTextInBinary);
-					writer.print(encryptedPlainTextInHex);
+					writer.println(encryptedPlainTextInHex);
 				}
-				
+				writer.println("0A");
 			}
 			writer.close();
 		} 
