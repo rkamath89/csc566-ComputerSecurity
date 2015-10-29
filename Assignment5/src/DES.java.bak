@@ -14,7 +14,6 @@ import gnu.getopt.Getopt;
 
 public class DES {
 	static String characters = "abcdefghijklmnpqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-	static String num_characters="0123456789";
 	static List<String> keyListAfterPc2 = new ArrayList<String>();
 	static HashMap<Integer,List<String>> keyRounds = new HashMap<Integer,List<String>>();
 	public final static boolean _DEBUG = false;
@@ -181,30 +180,6 @@ public class DES {
 		}
 		return randomStr.toString();
 	}
-	
-	static String getRandomInitializationVector(int len)
-	{
-
-		StringBuffer randomStr = new StringBuffer();
-		Random rand = new Random(System.currentTimeMillis());
-		for(int i=0;i<len;i++)
-		{
-			int randPos = rand.nextInt();
-			int pos = Math.abs(randPos % (num_characters.length()-1));
-			randomStr.append(num_characters.charAt(pos));
-		}
-		return randomStr.toString();
-	}
-	
-	static String InitializationVector = getRandomInitializationVector(8);	
-	 static String InitializationVectorInHex=getHexRepresentationOfString(InitializationVector);
-	 static String InitializationVectorInBinary = getBinaryRepresentationOfHexString(InitializationVectorInHex);
-	 static String tempUsedForEncryptionInXORInHex= InitializationVectorInHex;
-	 static String tempUsedForDecryptionInXORInHex;
-	 static String tempCipherTextInHex;
-	
-	
-	
 	static int convertFromBinaryToDecimal(String binaryStr)
 	{
 		return Integer.parseInt(binaryStr,2);
@@ -257,13 +232,7 @@ public class DES {
 			List<String> lines = Files.readAllLines(Paths.get(inputFile.toString()), Charset.defaultCharset());
 			//String IVStr = lines.get(0);
 			//lines.remove(0);
-			String IV=lines.get(0);
-			String IVInHex=getHexRepresentationOfString(IV);
-			//String IVInBinary=getBinaryRepresentationOfHexString(IVInHex);
-			System.out.println(IV);
-			tempUsedForDecryptionInXORInHex=IVInHex;
 			String encryptedText;
-			lines.remove(0);
 
 			for (String line : lines) 
 			{
@@ -275,13 +244,7 @@ public class DES {
 				for(int startPos=0;startPos<line.length();startPos=startPos+16)
 				{
 					String decryptedPlainText = DES_decrypt(null,line.substring(startPos,startPos+16));
-					String decryptedPlainTextInBinary=decryptedPlainText;
-					//System.out.println("Initialization v in hex is"+ InitializationVectorInHex);
-					String tempUsedForDecryptionInXORInBinary=getBinaryRepresentationOfHexString(tempUsedForDecryptionInXORInHex);
-					String XORafterDecryption=xor_of_values(decryptedPlainTextInBinary,tempUsedForDecryptionInXORInBinary);
-					//System.out.println("xor AFTER DECRYPION is"+XORafterDecryption);
-					decryptedPlainText = convertFromBinaryToHex(XORafterDecryption);
-					//decryptedPlainText = convertFromBinaryToHex(decryptedPlainText);
+					decryptedPlainText = convertFromBinaryToHex(decryptedPlainText);
 					if(decryptedPlainText.length() >= 4)
 					{
 						String val = decryptedPlainText.substring(decryptedPlainText.length()-4, decryptedPlainText.length()-2);
@@ -295,20 +258,12 @@ public class DES {
 						
 						}
 					}
-					
-					/*String XORafterDecryption=xor_of_values(decryptedPlainTextInBinary,InitializationVectorInBinary);
-					XORafterDecryption = convertFromBinaryToHex(XORafterDecryption);
-					XORafterDecryption = convertHexToString(XORafterDecryption);
-					System.out.println("Decrypted Clear Text is : "+XORafterDecryption);*/
-					
 					decryptedPlainText = convertHexToString(decryptedPlainText);
 					System.out.println("Decrypted Clear Text is : "+decryptedPlainText);
 					//encryptedText = DES_decrypt(IVStr, line);
 					writer.print(decryptedPlainText);
-					tempUsedForDecryptionInXORInHex=tempCipherTextInHex;
-					//writer.print(XORafterDecryption);
 				}
-				//writer.println();
+				
 			}
 			writer.close();
 		} catch (IOException e) {
@@ -324,7 +279,6 @@ public class DES {
 	private static String DES_decrypt(String iVStr, String encryptedLineInHex) 
 	{
 		System.out.println("CipherText in Hex to Decrypt is : "+encryptedLineInHex);
-		tempCipherTextInHex=encryptedLineInHex;
 		String plainTextInBinary = getBinaryRepresentationOfHexString(encryptedLineInHex);
 		String plainTextAfterIp = applyPCToString(IP, plainTextInBinary);
 		List<String> splitPlainTextList = splitTheStringIntoTwoHalves(plainTextAfterIp);
@@ -418,31 +372,7 @@ public class DES {
 		System.out.println("PlainText to encrypt is : "+plainText);
 		System.out.println("PlainText in HEX is : "+plainTextInHex);
 		String plainTextInBinary = getBinaryRepresentationOfHexString(plainTextInHex);
-		
-		
-		// String InitializationVector = getRandomInitializationVector(8);	
-		  //String InitializationVectorInHex=getHexRepresentationOfString(InitializationVector);
-		  //String InitializationVectorInBinary = getBinaryRepresentationOfHexString(InitializationVectorInHex);
-		 
-		
-		//System.out.println("Initialization vector is : "+ InitializationVector);
-		//System.out.println("Initialization vector in Hex is : "+InitializationVectorInHex);
-		//System.out.println("Initialization v in hex is"+ InitializationVectorInHex);
-		String tempUsedForEncryptionInXORInBinary=getBinaryRepresentationOfHexString(tempUsedForEncryptionInXORInHex);
-		
-		
-		String XORToEncryptInBinary=xor_of_values(plainTextInBinary, tempUsedForEncryptionInXORInBinary);
-		
-		System.out.println("XORToEncryptInBinary is"+XORToEncryptInBinary);
-		
-		//System.out.println(plainTextInBinary);
-		//System.out.println(InitializationVectorInBinary);
-		
-		//System.out.println(XORToEncrypt+"now encrypt");
-		
-		
-		String plainTextAfterIp = applyPCToString(IP, XORToEncryptInBinary);
-		//String plainTextAfterIp = applyPCToString(IP, plainTextInBinary);
+		String plainTextAfterIp = applyPCToString(IP, plainTextInBinary);
 		List<String> splitPlainTextList = splitTheStringIntoTwoHalves(plainTextAfterIp);
 		String leftHalf = splitPlainTextList.get(0);
 		String rightHalf = splitPlainTextList.get(1);
@@ -514,8 +444,7 @@ public class DES {
 		String encryptedPlainTextInHex = "";
 		try 
 		{
-			PrintWriter writer = new PrintWriter(outputFile.toString(), "UTF-8");	
-			writer.println(InitializationVector);
+			PrintWriter writer = new PrintWriter(outputFile.toString(), "UTF-8");			
 			List<String> allLines = Files.readAllLines(Paths.get(inputFile.toString()), Charset.defaultCharset());
 			for (String line : allLines) 
 			{
@@ -535,7 +464,6 @@ public class DES {
 				{
 					String encryptedPlainTextInBinary =  encryptFileContents(line.substring(startPos,startPos+8),false);
 					encryptedPlainTextInHex = convertFromBinaryToHex(encryptedPlainTextInBinary);
-					tempUsedForEncryptionInXORInHex=encryptedPlainTextInHex;
 					writer.println(encryptedPlainTextInHex);
 				}
 				writer.println("0A");
