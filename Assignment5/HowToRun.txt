@@ -1,5 +1,17 @@
+Make sure the jar1.jar is in same folder as DES.java
 
-java -cp ".;jar2.jar;" DES -h
-java -cp ".;jar2.jar;" DES -k
-java -cp ".;jar2.jar;" DES -e 6c4a655249696142  -i input.txt -o encrypted.txt
-java -cp ".;jar2.jar;" DES -d 6c4a655249696142  -i encrypted.txt -o decrypted.txt
+On WIndows:
+
+javac -cp ".;jar1.jar;" DES -h
+java -cp ".;jar1.jar;" DES -h
+java -cp ".;jar1.jar;" DES -k
+java -cp ".;jar1.jar;" DES -e 6c4a655249696142  -i input.txt -o encrypted.txt
+java -cp ".;jar1.jar;" DES -d 6c4a655249696142  -i encrypted.txt -o decrypted.txt
+
+On Linux:
+
+javac -cp ".:jar1.jar:" DES -h
+java -cp ".:jar1.jar:" DES -h
+java -cp ".:jar1.jar:" DES -k
+java -cp ".:jar1.jar:" DES -e 6c4a655249696142  -i input.txt -o encrypted.txt
+java -cp ".:jar1.jar:" DES -d 6c4a655249696142  -i encrypted.txt -o decrypted.txt
