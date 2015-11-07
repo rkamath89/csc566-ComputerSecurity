@@ -4,33 +4,46 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 import gnu.getopt.Getopt;
+import gnu.getopt.LongOpt;
 
 public class Chat {
 	static String host;
 	static int port;
 	static Socket s;
 	static String username;
-	
-	static boolean genDesKey = false;
-	static String desKeyInHex = new String();
-	
+
+	static String privateKeyAlice;
+	static String privateKeyBob;
+	static String publicKeyAlice;
+	static String publicKeyBob;
+	static String aliceModulus;
+	static String bobModulus;
+
+	static boolean genKey = false;
+	static boolean firstMessageToInitialize = true;
+	static boolean repliedOk = false;
+	static StringBuilder desKeyInHex = new StringBuilder("6c4a655249696142");
+
 	static boolean generateRsaKeys = false;
-	static String myPublicKey = new String();
-	static String othersPublicKey = new String();
-	static String myPrivateKey = new String();
-	
+	static List<String> myPublicKey = new ArrayList<String>();
+	static List<String> othersPublicKey = new ArrayList<String>();
+	static List<String> myPrivateKey = new ArrayList<String>();
+	static DES des ;
+	static RSA rsa ;
 	public static void main(String[] args) throws IOException {
 
 		@SuppressWarnings("resource")
 		Scanner keyboard = new Scanner(System.in);
 		//Process command line arguments
 		pcl(args);
-		if(genDesKey)
+		if(genKey)
 		{
-			genDesKey = false;
+			genKey = false;
 			return;
 		}
 		System.out.println(username+" CHAT CLIENT");		
@@ -58,12 +71,28 @@ public class Chat {
 		} 
 		String input = "";
 		while(true){
-			
-			input = keyboard.nextLine();
-			input = username + ": " + input;
+			if(firstMessageToInitialize && "bob".equalsIgnoreCase(username))
+			{
+				desKeyInHex = new StringBuilder(des.genDESkey());
+				System.out.println(username+" Generated Des Key : "+desKeyInHex);
+				input = rsa.RSAencrypt(desKeyInHex, new StringBuilder(aliceModulus), new StringBuilder(privateKeyAlice));
+				output.println(input);
+				output.flush();
+				firstMessageToInitialize = false;
+			}
+			else
+			{
+				input = keyboard.nextLine();
+				if("alice".equalsIgnoreCase(username) && "ok".equalsIgnoreCase(input))
+				{
+					repliedOk = true;
+				}
+				// THis sgould be where i emcrypt
+				input = des.encrypt(desKeyInHex, null, null, input);
+				output.println(input);
+				output.flush();
+			}
 
-			output.println(input);
-			output.flush();	
 		}
 	}
 
@@ -75,20 +104,20 @@ public class Chat {
 	 * and leave function. 
 	 * If there is no client found then it becomes the listener and waits for
 	 * a new client to join on that ip:port pairing. 
-	*/
+	 */
 	private static void setupServer() {
 		try {
 			// This line will catch if there isn't a waiting port
 			s = new Socket(host, port);
-			
+
 		} catch (IOException e1) {
 			System.out.println("There is no other client on this IP:port pairing, waiting for them to join.");
-			
+
 			try {
 				ServerSocket listener = new ServerSocket(port);
 				s = listener.accept();
 				listener.close();
-				
+
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
@@ -108,31 +137,43 @@ public class Chat {
 	 */
 	private static void pcl(String[] args) 
 	{
+
 		/*
 		 * http://www.urbanophile.com/arenn/hacking/getopt/gnu.getopt.Getopt.html
 		 */
-		Getopt g = new Getopt("Chat Program", args, "u:k:p:i:");
+		LongOpt[] longopts = new LongOpt[2];
+		longopts[0] = new LongOpt("alice", LongOpt.NO_ARGUMENT, null, 1);
+		longopts[1] = new LongOpt("bob", LongOpt.NO_ARGUMENT, null, 2);
+		Getopt g = new Getopt("Chat Program", args, "k:p:i:a:b:m:n:", longopts);
 		int c;
 		String arg;
-		while ((c = g.getopt()) != -1)
-		{
-			switch(c)
-			{
+		while ((c = g.getopt()) != -1){
+			switch(c){
+			case 1:
+				username = "alice";
+				break;
+			case 2:
+				username = "bob";
+				break;
 			case 'k':
 				arg = g.getOptarg();
-				if(arg.equalsIgnoreCase("D"))
+				if(arg == "0")
 				{
-					desKeyInHex = DES.genDESkey();
-					System.out.println("Generated Des Key is : "+desKeyInHex);
-					System.out.println();
-					genDesKey = true;
+					arg = "1024";
 				}
-				else if(arg.equalsIgnoreCase("R"))
-				{
-					
-				}
-				break;
+				rsa = new RSA();
+				System.out.println("Private and Public Key for "+username);
+				List<String> rsaKeys = rsa.genRSAkey(new StringBuilder(arg));
+				/*
+				System.out.println("E : "+rsaKeys.get(0));
+				System.out.println("D : "+rsaKeys.get(1));
+				System.out.println("N : "+rsaKeys.get(2));
+				*/
+				genKey = true;
+				//myPublicKey.add(rsaKeys.get(0)); myPublicKey.add(rsaKeys.get(2)); // e,n
+				//myPrivateKey.add(rsaKeys.get(1)); myPrivateKey.add(rsaKeys.get(2)); // d,n
 
+				break;
 			case 'p':
 				arg = g.getOptarg();
 				port = Integer.parseInt(arg);
@@ -141,10 +182,24 @@ public class Chat {
 				arg = g.getOptarg();
 				host = arg;
 				break;
+			case 'a':
+				arg = g.getOptarg();
+				privateKeyAlice = arg;
+				break;
+			case 'm':
+				arg = g.getOptarg();
+				aliceModulus = arg;
+				break;
+			case 'b':
+				arg = g.getOptarg();
+				publicKeyBob = arg;
+				break;
+			case 'n':
+				arg = g.getOptarg();
+				bobModulus = arg;
+				break;
 			case 'h':
 				callUsage(0);
-			case 'u':
-				username = g.getOptarg();
 			case '?':
 				break; // getopt() already printed an error
 				//
@@ -152,6 +207,8 @@ public class Chat {
 				break;
 			}
 		}
+
+
 	}
 
 	/**
@@ -179,7 +236,7 @@ public class Chat {
 		ChatListenter()
 		{
 		}
-		
+
 		@Override
 		public void run() 
 		{
@@ -199,10 +256,34 @@ public class Chat {
 			{
 				try 
 				{
-					//Read lines off the scanner
-					inputStr = input.readLine();
-					System.out.println(inputStr);
-
+					if(firstMessageToInitialize && "alice".equalsIgnoreCase(username)) // This will be the DES Key
+					{
+						inputStr = input.readLine(); // This is what i Received it will be Encrypted
+						System.out.println("Encrypted Des Key is : "+inputStr);
+						String decryptedString = rsa.RSAdecrypt(new StringBuilder(inputStr), new StringBuilder(aliceModulus), new StringBuilder(privateKeyAlice));
+						System.out.println("Decrypted DES Key is :"+decryptedString);
+						desKeyInHex = new StringBuilder(decryptedString);
+						firstMessageToInitialize = false;
+					}
+					else
+					{
+						//Read lines off the scanner
+						inputStr = input.readLine(); // This is what i Received it will be Encrypted
+						System.out.println("Encrypted String : "+inputStr);
+						String decryptedString = des.decrypt(desKeyInHex, null, null, inputStr);
+						if("bob".equalsIgnoreCase(username) && !repliedOk)
+						{
+							if("ok".equalsIgnoreCase(decryptedString))
+							{
+								repliedOk = true;
+								System.out.println("Decrypted String : "+decryptedString);
+							}
+						}
+						else
+						{
+							System.out.println("Decrypted String : "+decryptedString);
+						}
+					}
 					if(inputStr == null)
 					{
 						System.err.println("The other user has disconnected, closing program...");
@@ -217,7 +298,7 @@ public class Chat {
 				}
 			}
 		}
-		   
+
 		public void start()
 		{
 			if (t == null)

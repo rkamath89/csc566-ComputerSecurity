@@ -109,4 +109,22 @@ public class DESTest {
 	{
 		String _64BitKey = "0001001100110100010101110111100110011011101111001101111111110001";
 	}
+	@Test
+	public void testChatEncryptionLogic()
+	{
+		StringBuilder key = new StringBuilder("6c4a655249696142");
+		String finalEncryptedString = "cc492a0855a84d59b021698cded8f6bd";
+		String lineFromChat = "Hi Rahul";
+		String cipherText = DES.encrypt(key, null, null, lineFromChat);
+		Assert.assertEquals(finalEncryptedString,cipherText);
+	}
+	@Test
+	public void testChatDecryptionLogic()
+	{
+		StringBuilder key = new StringBuilder("6c4a655249696142");
+		String encryptedChatString = "cc492a0855a84d59b021698cded8f6bd";
+		String plainText = "Hi Rahul";
+		String decryptedPlainText = DES.decrypt(key, null, null, encryptedChatString);
+		Assert.assertEquals(plainText,decryptedPlainText);
+	}
 }

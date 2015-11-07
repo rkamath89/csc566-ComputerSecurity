@@ -1,5 +1,7 @@
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import gnu.getopt.Getopt;
@@ -40,26 +42,28 @@ public class RSA {
 
 
 
-	private static void RSAencrypt(StringBuilder message, StringBuilder nStr, StringBuilder encryptionString) 
+	static String RSAencrypt(StringBuilder message, StringBuilder nStr, StringBuilder encryptionString) 
 	{
 		BigInteger plaintext = new BigInteger(message.toString(),16);
 		BigInteger e = new BigInteger(encryptionString.toString(),16);
 		BigInteger n = new BigInteger(nStr.toString(),16);
 		BigInteger cipherText = plaintext.modPow(e,n);
-		System.out.println("Cipher Text is : "+cipherText.toString(16));
+		//System.out.println("Cipher Text is : "+cipherText.toString(16));
+		return cipherText.toString(16);
 	}
 
-	private static void RSAdecrypt(StringBuilder message, StringBuilder nStr,StringBuilder decryptionString)
+	static String RSAdecrypt(StringBuilder message, StringBuilder nStr,StringBuilder decryptionString)
 	{
 		BigInteger cipherText = new BigInteger(message.toString(),16);
 		BigInteger d = new BigInteger(decryptionString.toString(),16);
 		BigInteger n = new BigInteger(nStr.toString(),16);
 		BigInteger plainText = cipherText.modPow(d,n);
-		System.out.println("Plain Text is : "+plainText.toString(16));
+		//System.out.println("Plain Text is : "+plainText.toString(16));
+		return plainText.toString(16);
 		
 	}
 	
-	private static void genRSAkey(StringBuilder bitSizeStr) 
+	static List<String> genRSAkey(StringBuilder bitSizeStr) 
 	{
 		Random rnd = new SecureRandom();
 		//rnd.setSeed(System.currentTimeMillis());
@@ -85,6 +89,11 @@ public class RSA {
 		BigInteger temp = new BigInteger(dInHex,16);
 		System.out.println("Your Computed Public Key(e,n) is : "+eInHex+" , "+nInHex);
 		System.out.println("Your Computed Secret Key(d,n) is : "+dInHex+" , "+nInHex);
+		List<String> rsaKeys = new ArrayList<String>();
+		rsaKeys.add(eInHex);
+		rsaKeys.add(dInHex);
+		rsaKeys.add(nInHex);
+		return rsaKeys;
 	}
 
 
