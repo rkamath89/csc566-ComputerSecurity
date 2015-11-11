@@ -75,6 +75,7 @@ public class Chat {
 			{
 				desKeyInHex = new StringBuilder(des.genDESkey());
 				System.out.println(username+" Generated Des Key : "+desKeyInHex);
+				input = username + ": " + input;
 				input = rsa.RSAencrypt(desKeyInHex, new StringBuilder(aliceModulus), new StringBuilder(privateKeyAlice));
 				output.println(input);
 				output.flush();
@@ -88,6 +89,7 @@ public class Chat {
 					repliedOk = true;
 				}
 				// THis sgould be where i emcrypt
+				input = username + ": " + input;
 				input = des.encrypt(desKeyInHex, null, null, input);
 				output.println(input);
 				output.flush();
@@ -273,15 +275,15 @@ public class Chat {
 						String decryptedString = des.decrypt(desKeyInHex, null, null, inputStr);
 						if("bob".equalsIgnoreCase(username) && !repliedOk)
 						{
-							if("ok".equalsIgnoreCase(decryptedString))
+							if("alice: ok".equalsIgnoreCase(decryptedString))
 							{
 								repliedOk = true;
-								System.out.println("Decrypted String : "+decryptedString);
+								System.out.println(decryptedString);
 							}
 						}
 						else
 						{
-							System.out.println("Decrypted String : "+decryptedString);
+							System.out.println(decryptedString);
 						}
 					}
 					if(inputStr == null)
