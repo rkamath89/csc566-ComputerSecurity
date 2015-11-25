@@ -13,7 +13,6 @@ public class RSA {
 	static BigInteger ONE = BigInteger.ONE;
 	static BigInteger e  = new BigInteger("65537"); //fixed value
 	public static void main(String[] args){
-		
 		StringBuilder bitSizeStr = new StringBuilder();
 		StringBuilder generateKey = new StringBuilder();
 		StringBuilder nStr = new StringBuilder();
@@ -22,19 +21,18 @@ public class RSA {
 		StringBuilder message = new StringBuilder();
 		
 		pcl(args, generateKey,bitSizeStr, nStr, decryptionKey, encryptionKey,message);
-		
-		if(!"".equalsIgnoreCase(bitSizeStr.toString()))
+		if(!bitSizeStr.toString().isEmpty())
 		{
 			//This means you want to create a new key
 			genRSAkey(bitSizeStr);
 		}
 		
 		if(!encryptionKey.toString().equalsIgnoreCase("")){
-			RSAencrypt(message, nStr, encryptionKey);
+			RSAencrypt(message, nStr, encryptionKey,false);
 		}
 		
 		if(!decryptionKey.toString().equalsIgnoreCase("")){
-			RSAdecrypt(message, nStr, decryptionKey);
+			RSAdecrypt(message, nStr, decryptionKey,false);
 		}
 		
 		
@@ -42,23 +40,25 @@ public class RSA {
 
 
 
-	static String RSAencrypt(StringBuilder message, StringBuilder nStr, StringBuilder encryptionString) 
+	static String RSAencrypt(StringBuilder message, StringBuilder nStr, StringBuilder encryptionString,boolean isFromChat) 
 	{
 		BigInteger plaintext = new BigInteger(message.toString(),16);
 		BigInteger e = new BigInteger(encryptionString.toString(),16);
 		BigInteger n = new BigInteger(nStr.toString(),16);
 		BigInteger cipherText = plaintext.modPow(e,n);
-		//System.out.println("Cipher Text is : "+cipherText.toString(16));
+		if(!isFromChat)
+			System.out.println("Cipher Text is : "+cipherText.toString(16));
 		return cipherText.toString(16);
 	}
 
-	static String RSAdecrypt(StringBuilder message, StringBuilder nStr,StringBuilder decryptionString)
+	static String RSAdecrypt(StringBuilder message, StringBuilder nStr,StringBuilder decryptionString,boolean isFromChat)
 	{
 		BigInteger cipherText = new BigInteger(message.toString(),16);
 		BigInteger d = new BigInteger(decryptionString.toString(),16);
 		BigInteger n = new BigInteger(nStr.toString(),16);
 		BigInteger plainText = cipherText.modPow(d,n);
-		//System.out.println("Plain Text is : "+plainText.toString(16));
+		if(!isFromChat)
+			System.out.println("Plain Text is : "+plainText.toString(16));
 		return plainText.toString(16);
 		
 	}
@@ -66,11 +66,13 @@ public class RSA {
 	static List<String> genRSAkey(StringBuilder bitSizeStr) 
 	{
 		Random rnd = new SecureRandom();
-		//rnd.setSeed(System.currentTimeMillis());
+		rnd.setSeed(System.currentTimeMillis());
 		
 		// Step 1 Generate two Primes
 		BigInteger p = BigInteger.probablePrime(Integer.valueOf(bitSizeStr.toString()), rnd);
+		System.out.println("p Length :: "+p.bitLength());
 		BigInteger q = BigInteger.probablePrime(Integer.valueOf(bitSizeStr.toString()), rnd);
+		System.out.println("q Length :: "+q.bitLength());
 		//Step 2 Calculate N = p x q
 		BigInteger n = p.multiply(q);
 		// Step 3 : Compute phi(n) = (p-1) x (q-1)

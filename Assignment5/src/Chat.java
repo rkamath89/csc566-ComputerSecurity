@@ -76,7 +76,7 @@ public class Chat {
 				desKeyInHex = new StringBuilder(des.genDESkey());
 				System.out.println(username+" Generated Des Key : "+desKeyInHex);
 				input = username + ": " + input;
-				input = rsa.RSAencrypt(desKeyInHex, new StringBuilder(aliceModulus), new StringBuilder(privateKeyAlice));
+				input = rsa.RSAencrypt(desKeyInHex, new StringBuilder(aliceModulus), new StringBuilder(privateKeyAlice),true);
 				output.println(input);
 				output.flush();
 				firstMessageToInitialize = false;
@@ -262,7 +262,7 @@ public class Chat {
 					{
 						inputStr = input.readLine(); // This is what i Received it will be Encrypted
 						System.out.println("Encrypted Des Key is : "+inputStr);
-						String decryptedString = rsa.RSAdecrypt(new StringBuilder(inputStr), new StringBuilder(aliceModulus), new StringBuilder(privateKeyAlice));
+						String decryptedString = rsa.RSAdecrypt(new StringBuilder(inputStr), new StringBuilder(aliceModulus), new StringBuilder(privateKeyAlice),true);
 						System.out.println("Decrypted DES Key is :"+decryptedString);
 						desKeyInHex = new StringBuilder(decryptedString);
 						firstMessageToInitialize = false;
